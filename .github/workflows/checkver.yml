@@ -1,0 +1,96 @@
+name: checkver
+
+# Auto-update car.json when upstream Parslee-ai/car-releases ships a new tag.
+#
+# How it works:
+#   1. Daily at 09:00 UTC (~ 02:00 PT), spin up a Windows runner and install Scoop.
+#   2. `scoop checkver -u car` reads the manifest's `checkver` block (which points
+#      at Parslee-ai/car-releases), compares against the latest GitHub release,
+#      and — when newer — rewrites `bucket/car.json` using the `autoupdate` block
+#      (substitutes $version into the URL and re-fetches the SHA256).
+#   3. If `git diff` shows a change, commit it with the same `car: bump to X.Y.Z`
+#      message convention every prior bump in this repo has used.
+#   4. Otherwise the run is a clean no-op.
+#
+# `workflow_dispatch` also enabled so a maintainer can force-trigger when needed.
+#
+# Background on the gap this closes:
+# The bucket sat at v0.4.0 from 2026-04-20 to 2026-05-18 (28 days) while
+# Parslee-ai/car-releases shipped v0.5 through v0.15.2. `checkver`/`autoupdate`
+# were correctly configured in the manifest, but no scheduled action invoked
+# them. Every Windows install during that window pulled obsolete binaries.
+
+on:
+  schedule:
+    # 09:00 UTC daily. Slightly off the top of the hour so this isn't fighting
+    # the rest of the GitHub Actions cron stampede.
+    - cron: '7 9 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  checkver:
+    runs-on: windows-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          # We commit + push from this checkout, so we need full credentials,
+          # not the read-only default that --depth=1 would give.
+          fetch-depth: 0
+
+      - name: Install Scoop
+        shell: pwsh
+        run: |
+          # Per-user install. -RunAsAdmin is intentionally NOT passed — the
+          # bucket maintenance workflow only needs `scoop checkver`, which
+          # doesn't require admin.
+          Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser -Force
+          Invoke-RestMethod -Uri https://get.scoop.sh | Invoke-Expression
+
+          # Add the shim dir to PATH for the remaining steps in this job.
+          "$env:USERPROFILE\scoop\shims" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+
+      - name: Run scoop checkver -u
+        id: checkver
+        shell: pwsh
+        run: |
+          # scoop checkver expects to run from a bucket repo root. With -u it
+          # rewrites the manifest in place if upstream has advanced. Output goes
+          # to stdout; we let it surface in the job log either way.
+          #
+          # The exit code is 0 on both "no change needed" and "manifest updated"
+          # — we use git diff to tell which.
+          scoop checkver -u car
+
+          # Surface what (if anything) changed.
+          $diff = git diff --stat bucket/car.json
+          if ($diff) {
+            Write-Host "::notice::car.json was updated"
+            git diff bucket/car.json
+            "changed=true" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+          } else {
+            Write-Host "No upstream change — car.json is up to date."
+            "changed=false" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+          }
+
+      - name: Commit and push
+        if: steps.checkver.outputs.changed == 'true'
+        shell: pwsh
+        run: |
+          # Extract the new version directly from the manifest so the commit
+          # message matches the bucket's historical convention (`car: bump to X.Y.Z`).
+          $manifest = Get-Content bucket/car.json | ConvertFrom-Json
+          $version = $manifest.version
+
+          # GitHub's default Actions bot identity. The repo allows this bot to push.
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add bucket/car.json
+          git commit -m "car: bump to $version"
+          git push
+          Write-Host "::notice::Pushed car: bump to $version"
