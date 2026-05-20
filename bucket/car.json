@@ -1,30 +1,30 @@
 {
-  "version": "0.15.2",
-  "description": "Common Agent Runtime — deterministic execution layer for AI agents (CLI + server)",
-  "homepage": "https://github.com/Parslee-ai/car-releases",
-  "license": {
-    "identifier": "Freeware",
-    "url": "https://github.com/Parslee-ai/car-releases/blob/main/LICENSE"
-  },
-  "architecture": {
-    "64bit": {
-      "url": "https://github.com/Parslee-ai/car-releases/releases/download/v0.15.2/car-win32-x64-msvc.zip",
-      "hash": "8fb7cfc394731219331661ee0df3c3a6de1ad7116c1e2a734575c2084c7e550c"
-    }
-  },
-  "bin": [
-    "car.exe",
-    "car-server.exe",
-    "car-memgine-eval.exe"
-  ],
-  "checkver": {
-    "github": "https://github.com/Parslee-ai/car-releases"
-  },
-  "autoupdate": {
+    "version": "0.16.0",
+    "description": "Common Agent Runtime — deterministic execution layer for AI agents (CLI + server)",
+    "homepage": "https://github.com/Parslee-ai/car-releases",
+    "license": {
+        "identifier": "Freeware",
+        "url": "https://github.com/Parslee-ai/car-releases/blob/main/LICENSE"
+    },
     "architecture": {
-      "64bit": {
-        "url": "https://github.com/Parslee-ai/car-releases/releases/download/v$version/car-win32-x64-msvc.zip"
-      }
+        "64bit": {
+            "url": "https://github.com/Parslee-ai/car-releases/releases/download/v0.16.0/car-win32-x64-msvc.zip",
+            "hash": "82fe0429352f60511564a53deb3f7ccf7f0ba8aff635046bdba7be3d65403cb9"
+        }
+    },
+    "bin": [
+        "car.exe",
+        "car-server.exe",
+        "car-memgine-eval.exe"
+    ],
+    "checkver": {
+        "github": "https://github.com/Parslee-ai/car-releases"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/Parslee-ai/car-releases/releases/download/v$version/car-win32-x64-msvc.zip"
+            }
+        }
     }
-  }
 }
