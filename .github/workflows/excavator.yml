@@ -1,0 +1,49 @@
+name: Excavator
+
+# Auto-update car.json when upstream Parslee-ai/car-releases ships a new tag.
+#
+# Uses ScoopInstaller/GithubActions (the "Excavator" action) — the canonical
+# tooling Scoop buckets use for autoupdate. It runs Scoop's own
+# bin/checkver.ps1 against every manifest in bucket/, applies the manifest's
+# `autoupdate` block when upstream has advanced (substitutes the new version
+# into the URL and re-fetches the SHA256), commits the bump, and pushes.
+#
+# A previous hand-rolled workflow tried `scoop checkver -u car` — that is NOT
+# a real scoop subcommand (`checkver` ships as bin/checkver.ps1 inside the
+# Scoop install, not as a CLI verb). It failed silently with
+# "WARN scoop: 'checkver' isn't a scoop command" and every run falsely
+# reported "up to date". THROW_ERROR below makes any future checkver failure
+# fail the run loudly instead of passing green — that silent-pass is exactly
+# the class of bug this whole effort was about.
+#
+# Background on the gap this closes: the bucket sat at v0.4.0 from
+# 2026-04-20 to 2026-05-18 (28 days) while car-releases shipped v0.5 through
+# v0.15.2. The manifest's checkver/autoupdate config was correct; nothing
+# scheduled invoked it.
+
+on:
+  schedule:
+    # Hourly at :17 — off the top of the hour to dodge the cron stampede.
+    - cron: '17 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  excavate:
+    name: Excavator
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Excavator
+        uses: ScoopInstaller/GithubActions@main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Suppress per-manifest "already latest" log spam on no-op runs.
+          SKIP_UPDATED: '1'
+          # Fail the run on any checkver error instead of silently passing.
+          # This is the guardrail the previous workflow lacked.
+          THROW_ERROR: '1'
