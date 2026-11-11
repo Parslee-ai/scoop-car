@@ -1,5 +1,5 @@
 {
-    "version": "0.60.0",
+    "version": "0.61.2",
     "description": "Common Agent Runtime — deterministic execution layer for AI agents (CLI + server)",
     "homepage": "https://github.com/Parslee-ai/car-releases",
     "license": {
@@ -8,8 +8,8 @@
     },
     "architecture": {
         "64bit": {
-            "url": "https://github.com/Parslee-ai/car-releases/releases/download/v0.60.0/car-win32-x64-msvc.zip",
-            "hash": "fc4c96f6ce87a466a2e371bffc55520019cb3d2cc51e3929c2d767503fcb2123"
+            "url": "https://github.com/Parslee-ai/car-releases/releases/download/v0.61.2/car-win32-x64-msvc.zip",
+            "hash": "aa1abd0d163be9161c673852f53630647f64b5d521687798b8f51a95b10ec8ee"
         }
     },
     "bin": [
